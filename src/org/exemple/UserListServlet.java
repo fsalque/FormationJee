@@ -33,7 +33,6 @@ public class UserListServlet extends HttpServlet {
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
-		UsersManager.Initialize();
 		displayView(request,response,UsersManager.getInstance().getAll());
 	}
 

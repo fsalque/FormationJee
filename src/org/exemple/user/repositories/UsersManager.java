@@ -1,102 +1,197 @@
 package org.exemple.user.repositories;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.exemple.connection.SqlConnection;
 import org.exemple.user.entities.User;
 
 public class UsersManager {
-	
-	private static final UsersManager instance= new UsersManager();
-	
-	private static boolean initialized = false;
-	
-	private UsersManager(){
+
+	private static final UsersManager instance = new UsersManager();
+
+
+	private UsersManager() {
 	};
-	
-	
-	public static void Initialize() {
-		if (!initialized){
-			for (int i = 0;i<10;i++){
-				User user = new User();
-				user.setAdress("Adresse"+i);
-				user.setId(i);
-				user.setName("Nom"+i);
-				user.setSurname("Prenom"+i);
-				instance.add(user);
-				initialized = true;
-			}
-		}
-	}
-	
-	public static final UsersManager getInstance(){
+
+
+	public static final UsersManager getInstance() {
 		return instance;
 	}
-	
-	private Map<Integer,User> listUsers = new HashMap<Integer,User>();
-	
-	public void add(User user){
-		this.listUsers.put(user.getId(),user);
-	}
-	
-	public User remove(int i){
-		return this.listUsers.remove(i);
-	}
-	
-	public User getByID(int id){
-		User result = null;
-		result = listUsers.get(id);
+
+
+	public User add(User user) {
+		User result = getByID(user.getId());
+		if (result == null) {
+			result = user;
+
+			java.sql.PreparedStatement stmt = null;
+			try {
+				stmt = SqlConnection.getInstance().getConnection()
+						.prepareStatement("INSERT INTO jee.user VALUES (?,?,?,?);");
+				stmt.setInt(1,user.getId());
+				stmt.setString(2,user.getName());
+				stmt.setString(3,user.getSurname());
+				stmt.setString(4, user.getAdress());
+				
+				int rslt = stmt.executeUpdate();
+				stmt.close();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} finally {
+				if (stmt != null) {
+					try {
+						stmt.close();
+					} catch (SQLException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+			}
+
+		} else {
+			result = null;
+		}
 		return result;
 	}
-	
-	public ArrayList<User> getAll(){
-		listUsers.clear();
+
+	public User remove(int id) {
+		User result = getByID(id);
+
+		if (result != null) {
+			java.sql.PreparedStatement stmt = null;
+			try {
+				stmt = SqlConnection.getInstance().getConnection()
+						.prepareStatement("DELETE FROM user WHERE user.id=?;");
+				stmt.setInt(1, id);
+				int rslt = stmt.executeUpdate();
+				stmt.close();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} finally {
+				if (stmt != null) {
+					try {
+						stmt.close();
+					} catch (SQLException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+			}
+		}
+
+		return result;
+	}
+
+	public User getByID(int id) {
+		User result = null;
+		java.sql.PreparedStatement stmt = null;
+		try {
+			stmt = SqlConnection.getInstance().getConnection().prepareStatement("Select * FROM user WHERE user.id=?;");
+			stmt.setInt(1, id);
+			ResultSet rslt = stmt.executeQuery();
+			if (rslt.next()) {
+				int idUser = rslt.getInt("id");
+				String name = rslt.getString("lastname");
+				String surname = rslt.getString("firstname");
+				String adress = rslt.getString("adress");
+
+				User user = new User();
+				user.setAdress(adress);
+				user.setId(idUser);
+				user.setName(name);
+				user.setSurname(surname);
+
+				result = user;
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			if (stmt != null) {
+				try {
+					stmt.close();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
+		return result;
+	}
+
+	public List<User> getAll() {
+		List<User> result = new ArrayList<User>();
 		Statement stmt = null;
-		
+
 		try {
 			stmt = SqlConnection.getInstance().getConnection().createStatement();
 			ResultSet rslt = stmt.executeQuery("SELECT * From user;");
-			
-			while(rslt.next()){				
+
+			while (rslt.next()) {
 				int id = rslt.getInt("id");
 				String name = rslt.getString("lastname");
 				String surname = rslt.getString("firstname");
 				String adress = rslt.getString("adress");
-			
+
 				User user = new User();
 				user.setAdress(adress);
 				user.setId(id);
 				user.setName(name);
 				user.setSurname(surname);
-				
-				
-				listUsers.put(id, user);
+
+				result.add(user);
 			}
 			rslt.close();
-		}	
-		catch (SQLException e) {
+		} catch (SQLException e) {
 			e.printStackTrace();
-		}
-		finally{
-			if(stmt!=null){
+		} finally {
+			if (stmt != null) {
 				try {
 					stmt.close();
-				} 
-				catch (SQLException e) {
+				} catch (SQLException e) {
 					e.printStackTrace();
 				}
 			}
 		}
-		return new ArrayList<User>(listUsers.values());
+		return result;
 	}
-	
-	public void update(User user){
-		listUsers.replace(user.getId(), user);
+
+	public User update(User user) {
+		User result = getByID(user.getId());
+		if (result != null) {
+			result = user;
+			java.sql.PreparedStatement stmt = null;
+			try {
+				stmt = SqlConnection.getInstance().getConnection()
+						.prepareStatement("UPDATE user SET firstname=?,lastname=?,adress=? WHERE `id`=?;");
+				stmt.setInt(4,user.getId());
+				stmt.setString(2,user.getName());
+				stmt.setString(1,user.getSurname());
+				stmt.setString(3, user.getAdress());
+				
+				int rslt = stmt.executeUpdate();
+				stmt.close();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} finally {
+				if (stmt != null) {
+					try {
+						stmt.close();
+					} catch (SQLException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+			}
+
+		} 
+		return result;
 	}
 
 }
